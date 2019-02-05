@@ -314,34 +314,30 @@ Java_net_rubygrapefruit_platform_internal_jni_PosixProcessFunctions_setWorkingDi
     free(path);
 }
 
-JNIEXPORT jstring JNICALL
-Java_net_rubygrapefruit_platform_internal_jni_PosixProcessFunctions_getEnvironmentVariable(JNIEnv *env, jclass target, jstring var, jobject result) {
-    char* varStr = java_to_char(env, var, result);
+JNIEXPORT jbyteArray JNICALL
+Java_net_rubygrapefruit_platform_internal_jni_PosixProcessFunctions_getEnvironmentVariable(JNIEnv *env, jclass target, jbyteArray var, jobject result) {
+    char* varStr = byte_array_to_char(env, var, result);
     char* valueStr = getenv(varStr);
     free(varStr);
     if (valueStr == NULL) {
         return NULL;
     }
-    return char_to_java(env, valueStr, result);
+    return char_to_byte_array(env, valueStr, result);
 }
 
 JNIEXPORT void JNICALL
-Java_net_rubygrapefruit_platform_internal_jni_PosixProcessFunctions_setEnvironmentVariable(JNIEnv *env, jclass target, jstring var, jstring value, jobject result) {
-    char* varStr = java_to_char(env, var, result);
-    if (varStr != NULL) {
-        if (value == NULL) {
-            if (setenv(varStr, "", 1) != 0) {
-                mark_failed_with_errno(env, "could not putenv()", result);
-            }
-        } else {
-            char* valueStr = java_to_char(env, value, result);
-            if (valueStr != NULL) {
-                if (setenv(varStr, valueStr, 1) != 0) {
-                    mark_failed_with_errno(env, "could not putenv()", result);
-                }
-            }
-            free(valueStr);
+Java_net_rubygrapefruit_platform_internal_jni_PosixProcessFunctions_setEnvironmentVariable(JNIEnv *env, jclass target, jbyteArray var, jbyteArray value, jobject result) {
+    char* varStr = byte_array_to_char(env, var, result);
+    if (value == NULL) {
+        if (setenv(varStr, "", 1) != 0) {
+            mark_failed_with_errno(env, "could not putenv()", result);
         }
+    } else {
+        char* valueStr = byte_array_to_char(env, value, result);
+        if (setenv(varStr, valueStr, 1) != 0) {
+            mark_failed_with_errno(env, "could not putenv()", result);
+        }
+        free(valueStr);
     }
     free(varStr);
 }

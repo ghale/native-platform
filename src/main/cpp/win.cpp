@@ -57,6 +57,20 @@ wchar_t* java_to_wchar(JNIEnv *env, jstring string, jobject result) {
     return str;
 }
 
+wchar_t* byte_array_to_wchar(JNIEnv *env, byteArray bytes, jobject result) {
+    char* chars = byte_array_to_char(env, byteArray, result);
+    size_t length = strlen(chars);
+    wchar_t* wideString = (wchar_t*)malloc(sizeof(wchar_t) * length);
+    if (mbstowcs(wideString, chars, length+1) == (size_t)-1) {
+        mark_failed_with_message(env, "could not convert string from current locale", result);
+        free(wideString);
+        free(chars);
+        return NULL;
+    }
+    free(chars);
+    return wideString;
+}
+
 JNIEXPORT void JNICALL
 Java_net_rubygrapefruit_platform_internal_jni_NativeLibraryFunctions_getSystemInfo(JNIEnv *env, jclass target, jobject info, jobject result) {
     jclass infoClass = env->GetObjectClass(info);
@@ -141,8 +155,8 @@ Java_net_rubygrapefruit_platform_internal_jni_PosixProcessFunctions_setWorkingDi
 }
 
 JNIEXPORT jstring JNICALL
-Java_net_rubygrapefruit_platform_internal_jni_PosixProcessFunctions_getEnvironmentVariable(JNIEnv *env, jclass target, jstring var, jobject result) {
-    wchar_t* varStr = java_to_wchar(env, var, result);
+Java_net_rubygrapefruit_platform_internal_jni_PosixProcessFunctions_getEnvironmentVariable(JNIEnv *env, jclass target, jbyteArray var, jobject result) {
+    wchar_t* varStr = byte_array_to_wchar(env, var, result);
     DWORD len = GetEnvironmentVariableW(varStr, NULL, 0);
     if (len == 0) {
         if (GetLastError() != ERROR_ENVVAR_NOT_FOUND) {
@@ -169,7 +183,22 @@ Java_net_rubygrapefruit_platform_internal_jni_PosixProcessFunctions_getEnvironme
 }
 
 JNIEXPORT void JNICALL
-Java_net_rubygrapefruit_platform_internal_jni_PosixProcessFunctions_setEnvironmentVariable(JNIEnv *env, jclass target, jstring var, jstring value, jobject result) {
+Java_net_rubygrapefruit_platform_internal_jni_PosixProcessFunctions_setEnvironmentVariable(JNIEnv *env, jclass target, byteArray var, byteArray value, jobject result) {
+    wchar_t* varStr = byte_array_to_wchar(env, var, result);
+    wchar_t* valueStr = value == NULL ? NULL : byte_array_to_wchar(env, value, result);
+    BOOL ok = SetEnvironmentVariableW(varStr, valueStr);
+    free(varStr);
+    if (valueStr != NULL) {
+        free(valueStr);
+    }
+    if (!ok && GetLastError() != ERROR_ENVVAR_NOT_FOUND) {
+        mark_failed_with_errno(env, "could not set environment var", result);
+        return;
+    }
+}
+
+JNIEXPORT void JNICALL
+Java_net_rubygrapefruit_platform_internal_jni_PosixProcessFunctions_setEnvironmentVariableBytes(JNIEnv *env, jclass target, jbyteArray var, jbyteArray value, jobject result) {
     wchar_t* varStr = java_to_wchar(env, var, result);
     wchar_t* valueStr = value == NULL ? NULL : java_to_wchar(env, value, result);
     BOOL ok = SetEnvironmentVariableW(varStr, valueStr);

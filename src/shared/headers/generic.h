@@ -92,6 +92,16 @@ extern char* java_to_char(JNIEnv *env, jstring string, jobject result);
  */
 extern jstring char_to_java(JNIEnv* env, const char* chars, jobject result);
 
+/*
+ * Converts the given byte array to a NULL terminated char string. Should call free() when finished.
+ */
+extern char* byte_array_to_char(JNIEnv* env, jbyteArray byteArray, jobject result);
+
+/*
+ * Converts the given NULL terminated char string to a byte array.
+ */
+extern jbyteArray char_to_byte_array(JNIEnv* env, const char* chars, jobject result);
+
 #ifdef __cplusplus
 }
 #endif

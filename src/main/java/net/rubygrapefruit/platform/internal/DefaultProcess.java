@@ -20,7 +20,10 @@ import net.rubygrapefruit.platform.NativeException;
 import net.rubygrapefruit.platform.Process;
 import net.rubygrapefruit.platform.internal.jni.PosixProcessFunctions;
 
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
 import java.io.File;
+import java.io.IOException;
 
 public class DefaultProcess implements Process {
     public int getProcessId() throws NativeException {
@@ -56,7 +59,8 @@ public class DefaultProcess implements Process {
 
     public String getEnvironmentVariable(String name) throws NativeException {
         FunctionResult result = new FunctionResult();
-        String value = PosixProcessFunctions.getEnvironmentVariable(name, result);
+        byte[] variableBytes = PosixProcessFunctions.getEnvironmentVariable(name.getBytes(), result);
+        String value = variableBytes != null ? new String(variableBytes) : null;
         if (result.isFailed()) {
             throw new NativeException(String.format("Could not get the value of environment variable '%s': %s", name,
                     result.getMessage()));
@@ -66,7 +70,8 @@ public class DefaultProcess implements Process {
 
     public void setEnvironmentVariable(String name, String value) throws NativeException {
         FunctionResult result = new FunctionResult();
-        PosixProcessFunctions.setEnvironmentVariable(name, value, result);
+        String valueToUse = value == null ? "" : value;
+        PosixProcessFunctions.setEnvironmentVariable(name.getBytes(), valueToUse.getBytes(), result);
         if (result.isFailed()) {
             throw new NativeException(String.format("Could not set the value of environment variable '%s': %s", name,
                     result.getMessage()));
